@@ -855,6 +855,7 @@
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbz3XWqqLYNVt5X03qAgro9PZDuebR7DDVVN4CZ8z31dJ6mI9_AkSng1cbXmYRe12_fY/exec";
+    const HISTORY_LIMIT = 50;
 
     let menuItems = [];
     let cart = {};
@@ -899,22 +900,52 @@
       return `https://via.placeholder.com/400x300?text=${label}`;
     }
 
-    async function apiRequest(action, payload = null){
-      const isPost = !!payload;
-      const url = isPost
-        ? API + "?_t=" + Date.now()
-        : API + "?action=" + encodeURIComponent(action) + "&_t=" + Date.now();
-
+    async function apiRequestGet(url){
       let response;
       let rawText = "";
 
       try{
         response = await fetch(url, {
-          method: isPost ? "POST" : "GET",
-          headers: isPost ? { "Content-Type": "text/plain;charset=utf-8" } : {},
-          body: isPost ? JSON.stringify({ action, ...payload }) : undefined,
-          redirect: "follow",
-          cache: "no-store"
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow"
+        });
+      } catch (networkError){
+        throw new Error("Không kết nối được API. Kiểm tra lại Apps Script đã deploy public chưa.");
+      }
+
+      try{
+        rawText = await response.text();
+      } catch (readError){
+        throw new Error("Không đọc được phản hồi từ API.");
+      }
+
+      let data;
+      try{
+        data = JSON.parse(rawText);
+      } catch (parseError){
+        console.error("Raw API response:", rawText);
+        throw new Error("API không trả về JSON hợp lệ. Có thể URL deploy sai hoặc quyền truy cập chưa mở.");
+      }
+
+      if (!response.ok || !data.success){
+        throw new Error(data.message || "API trả về lỗi.");
+      }
+
+      return data.data;
+    }
+
+    async function apiRequestPost(action, payload = {}){
+      let response;
+      let rawText = "";
+
+      try{
+        response = await fetch(API + "?_t=" + Date.now(), {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, ...payload }),
+          cache: "no-store",
+          redirect: "follow"
         });
       } catch (networkError){
         throw new Error("Không kết nối được API. Kiểm tra lại Apps Script đã deploy public chưa.");
@@ -977,12 +1008,10 @@
 
     function renderGroupControls(){
       const groups = getGroups();
+      const groupTabsEl = $("groupTabs");
+      if (!groupTabsEl) return;
 
-      $("groupSelect").innerHTML = groups.map(g => `
-        <option value="${escapeAttr(g)}" ${g === activeGroup ? "selected" : ""}>${escapeHtml(g)}</option>
-      `).join("");
-
-      $("groupTabs").innerHTML = groups.map(g => `
+      groupTabsEl.innerHTML = groups.map(g => `
         <button type="button" class="group-tab ${g === activeGroup ? "active" : ""}" onclick="setGroup('${escapeJs(g)}')">${escapeHtml(g)}</button>
       `).join("");
     }
@@ -993,22 +1022,10 @@
       renderMenu();
     }
 
-    function resetFilters(){
-      activeGroup = "Tất cả";
-      $("searchInput").value = "";
-      renderGroupControls();
-      renderMenu();
-    }
-
     function getFilteredItems(){
-      const keyword = $("searchInput").value.trim().toLowerCase();
-
       return menuItems.filter(item => {
         const itemGroup = String(item.group || "Khác").trim() || "Khác";
-        const itemName = String(item.name || "");
-        const matchGroup = activeGroup === "Tất cả" || itemGroup === activeGroup;
-        const matchKeyword = !keyword || itemName.toLowerCase().includes(keyword);
-        return matchGroup && matchKeyword;
+        return activeGroup === "Tất cả" || itemGroup === activeGroup;
       });
     }
 
@@ -1173,7 +1190,7 @@
       }
 
       try{
-        await apiRequest("createOrder", {
+        const result = await apiRequestPost("createOrder", {
           order: { items }
         });
 
@@ -1182,8 +1199,9 @@
         renderMenu();
         renderCart();
         toggleCart(false);
+
+        applyCreatedOrderToUi(result, items);
         showToast("Đặt đơn thành công");
-        await Promise.allSettled([loadReport(), loadHistory()]);
       } catch(err){
         console.error(err);
         showToast("Lỗi đặt đơn: " + err.message);
@@ -1198,7 +1216,7 @@
     async function fetchMenu(){
       $("menuContainer").innerHTML = `<div class="empty">Đang tải danh sách món...</div>`;
 
-      const data = await apiRequest("menu");
+      const data = await apiRequestGet(API + "?action=menu&_t=" + Date.now());
       menuItems = Array.isArray(data) ? data : [];
 
       renderGroupControls();
@@ -1247,35 +1265,19 @@
         const toDate = $("reportToDate").value;
         validateDateRange(fromDate, toDate);
 
-        const data = await apiRequest("report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
-      } catch (err) {
-        // fallback to proper request below
-      }
-
-      try{
-        ensureDefaultDateFilters();
-
-        const fromDate = $("reportFromDate").value;
-        const toDate = $("reportToDate").value;
-        validateDateRange(fromDate, toDate);
-
-        const res = await fetch(
-          API + "?action=report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate) + "&_t=" + Date.now(),
-          { cache: "no-store" }
+        const data = await apiRequestGet(
+          API +
+          "?action=report" +
+          "&fromDate=" + encodeURIComponent(fromDate) +
+          "&toDate=" + encodeURIComponent(toDate) +
+          "&_t=" + Date.now()
         );
 
-        const raw = await res.text();
-        const data = JSON.parse(raw);
+        $("reportRevenue").textContent = formatCurrency(data.totalRevenue || 0);
+        $("reportOrders").textContent = Number(data.totalOrders || 0).toLocaleString("vi-VN");
+        $("reportQty").textContent = Number(data.totalQty || 0).toLocaleString("vi-VN");
 
-        if (!res.ok || !data.success){
-          throw new Error(data.message || "Không tải được số liệu");
-        }
-
-        $("reportRevenue").textContent = formatCurrency(data.data.totalRevenue || 0);
-        $("reportOrders").textContent = Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
-        $("reportQty").textContent = Number(data.data.totalQty || 0).toLocaleString("vi-VN");
-
-        const orders = data.data.orders || [];
+        const orders = data.orders || [];
         $("reportTableBody").innerHTML = orders.length
           ? orders.map(order => `
               <tr>
@@ -1301,31 +1303,18 @@
         const toDate = $("historyToDate").value;
         validateDateRange(fromDate, toDate);
 
-        const res = await fetch(
-          API + "?action=orders&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate) + "&_t=" + Date.now(),
-          { cache: "no-store" }
+        const data = await apiRequestGet(
+          API +
+          "?action=orders" +
+          "&fromDate=" + encodeURIComponent(fromDate) +
+          "&toDate=" + encodeURIComponent(toDate) +
+          "&limit=" + HISTORY_LIMIT +
+          "&_t=" + Date.now()
         );
 
-        const raw = await res.text();
-        const data = JSON.parse(raw);
+        historyOrders = Array.isArray(data) ? data : [];
 
-        if (!res.ok || !data.success){
-          throw new Error(data.message || "Không tải được lịch sử");
-        }
-
-        historyOrders = Array.isArray(data.data) ? data.data : [];
-
-        $("historyTableBody").innerHTML = historyOrders.length
-          ? historyOrders.map(order => `
-              <tr>
-                <td>${escapeHtml(order.time)}</td>
-                <td>${escapeHtml(order.orderCode)}</td>
-                <td>${renderItemsPreview(order.items)}</td>
-                <td>${formatCurrency(order.total || 0)}</td>
-                <td><button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button></td>
-              </tr>
-            `).join("")
-          : `<tr><td colspan="5" class="empty">Không có lịch sử đơn trong khoảng ngày đã chọn</td></tr>`;
+        rerenderHistoryTable();
       } catch(err){
         console.error(err);
         $("historyTableBody").innerHTML = `<tr><td colspan="5" class="empty">Lỗi tải lịch sử</td></tr>`;
@@ -1413,18 +1402,40 @@
       }
 
       try{
-        await apiRequest("updateOrder", {
+        const result = await apiRequestPost("updateOrder", {
           orderCode: editingOrder.orderCode,
           order: { items: editingOrder.items }
         });
 
+        applyUpdatedOrderToUi({
+          ...editingOrder,
+          orderCode: result.orderCode
+        });
+
         closeEditModal();
         showToast("Đã cập nhật đơn hàng");
-        await Promise.allSettled([loadReport(), loadHistory()]);
+
+        if (isCurrentTab("report")) {
+          await loadReport();
+        }
       } catch(err){
         console.error(err);
         showToast("Lỗi cập nhật: " + err.message);
       }
+    }
+
+    function applyUpdatedOrderToUi(updatedOrder){
+      const idx = historyOrders.findIndex(x => x.orderCode === updatedOrder.orderCode);
+      if (idx === -1) return;
+
+      historyOrders[idx] = {
+        ...historyOrders[idx],
+        items: JSON.parse(JSON.stringify(updatedOrder.items)),
+        total: updatedOrder.items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0),
+        totalQty: updatedOrder.items.reduce((s, i) => s + Number(i.quantity || 0), 0)
+      };
+
+      rerenderHistoryTable();
     }
 
     function formatDateInput(date){
@@ -1434,17 +1445,77 @@
       return `${y}-${m}-${d}`;
     }
 
+    function isCurrentTab(tabName){
+      return document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.contains("active");
+    }
+
+    function isWithinCurrentHistoryFilter(orderTimeText){
+      const fromDate = $("historyFromDate").value;
+      const toDate = $("historyToDate").value;
+      if (!fromDate || !toDate) return true;
+
+      const datePart = String(orderTimeText || "").split(" ")[1] || "";
+      const parts = datePart.split("/");
+      if (parts.length !== 3) return false;
+
+      const orderDate = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      return orderDate >= fromDate && orderDate <= toDate;
+    }
+
+    function rerenderHistoryTable(){
+      $("historyTableBody").innerHTML = historyOrders.length
+        ? historyOrders.map(order => `
+            <tr>
+              <td>${escapeHtml(order.time)}</td>
+              <td>${escapeHtml(order.orderCode)}</td>
+              <td>${renderItemsPreview(order.items)}</td>
+              <td>${formatCurrency(order.total || 0)}</td>
+              <td><button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button></td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="5" class="empty">Không có lịch sử đơn trong khoảng ngày đã chọn</td></tr>`;
+    }
+
+    function applyCreatedOrderToUi(createdOrder, items){
+      const total = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0);
+      const totalQty = items.reduce((s, i) => s + Number(i.quantity || 0), 0);
+
+      const newOrder = {
+        time: createdOrder.time,
+        detail: "",
+        total: createdOrder.total != null ? createdOrder.total : total,
+        totalQty: createdOrder.totalQty != null ? createdOrder.totalQty : totalQty,
+        orderCode: createdOrder.orderCode || "",
+        items: JSON.parse(JSON.stringify(items))
+      };
+
+      if (isWithinCurrentHistoryFilter(newOrder.time)) {
+        historyOrders.unshift(newOrder);
+        if (historyOrders.length > HISTORY_LIMIT) {
+          historyOrders = historyOrders.slice(0, HISTORY_LIMIT);
+        }
+        rerenderHistoryTable();
+      }
+
+      if (isCurrentTab("report")) {
+        const revenue = parseNumberFromCurrencyText($("reportRevenue").textContent);
+        const orders = Number(($("reportOrders").textContent || "0").replace(/\./g, "").replace(/,/g, ""));
+        const qty = Number(($("reportQty").textContent || "0").replace(/\./g, "").replace(/,/g, ""));
+
+        $("reportRevenue").textContent = formatCurrency(revenue + Number(newOrder.total || 0));
+        $("reportOrders").textContent = (orders + 1).toLocaleString("vi-VN");
+        $("reportQty").textContent = (qty + Number(newOrder.totalQty || 0)).toLocaleString("vi-VN");
+      }
+    }
+
+    function parseNumberFromCurrencyText(text){
+      return Number(String(text || "").replace(/[^\d.-]/g, "")) || 0;
+    }
+
     async function init(){
       loadCart();
       renderCart();
       ensureDefaultDateFilters();
-
-      $("searchInput").addEventListener("input", renderMenu);
-      $("groupSelect").addEventListener("change", function(){
-        activeGroup = this.value;
-        renderGroupControls();
-        renderMenu();
-      });
 
       try{
         await fetchMenu();
