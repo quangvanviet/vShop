@@ -597,6 +597,8 @@
       transition:.22s ease;
       z-index:100;
       box-shadow:var(--shadow);
+      max-width:min(90vw, 700px);
+      text-align:center;
     }
 
     .toast.show{
@@ -868,22 +870,94 @@
     let historyOrders = [];
     let editingOrder = null;
 
+    const $ = (id) => document.getElementById(id);
     const formatCurrency = (n) => Number(n || 0).toLocaleString("vi-VN") + " VNĐ";
 
     function showToast(message){
-      const el = document.getElementById("toast");
+      const el = $("toast");
       el.textContent = message;
       el.classList.add("show");
       clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+      window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function escapeHtml(text){
+      return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(text){
+      return escapeHtml(text);
+    }
+
+    function escapeJs(text){
+      return String(text || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, "")
+        .replace(/\n/g, "\\n");
+    }
+
+    function getFallbackImage(name){
+      const label = encodeURIComponent(name || "No Image");
+      return `https://via.placeholder.com/400x300?text=${label}`;
+    }
+
+    async function apiRequest(action, payload = null){
+      const isPost = !!payload;
+      const url = isPost
+        ? API + "?_t=" + Date.now()
+        : API + "?action=" + encodeURIComponent(action) + "&_t=" + Date.now();
+
+      let response;
+      let rawText = "";
+
+      try{
+        response = await fetch(url, {
+          method: isPost ? "POST" : "GET",
+          headers: isPost ? { "Content-Type": "text/plain;charset=utf-8" } : {},
+          body: isPost ? JSON.stringify({ action, ...payload }) : undefined,
+          redirect: "follow",
+          cache: "no-store"
+        });
+      } catch (networkError){
+        throw new Error("Không kết nối được API. Kiểm tra lại Apps Script đã deploy public chưa.");
+      }
+
+      try{
+        rawText = await response.text();
+      } catch (readError){
+        throw new Error("Không đọc được phản hồi từ API.");
+      }
+
+      let data;
+      try{
+        data = JSON.parse(rawText);
+      } catch (parseError){
+        console.error("Raw API response:", rawText);
+        throw new Error("API không trả về JSON hợp lệ. Có thể URL deploy sai hoặc quyền truy cập chưa mở.");
+      }
+
+      if (!response.ok || !data.success){
+        throw new Error(data.message || "API trả về lỗi.");
+      }
+
+      return data.data;
     }
 
     function switchTab(tabName){
       document.querySelectorAll(".section").forEach(el => el.classList.remove("active"));
       document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
 
-      document.getElementById("section-" + tabName).classList.add("active");
-      document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add("active");
+      const section = $("section-" + tabName);
+      const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+
+      if (section) section.classList.add("active");
+      if (tabBtn) tabBtn.classList.add("active");
 
       if (tabName === "report") loadReport();
       if (tabName === "history") loadHistory();
@@ -896,24 +970,27 @@
     function loadCart(){
       try {
         cart = JSON.parse(localStorage.getItem("pos-mini-cart") || "{}");
+        if (!cart || typeof cart !== "object") cart = {};
       } catch(e){
         cart = {};
       }
     }
 
     function getGroups(){
-      const groups = [...new Set(menuItems.map(i => (i.group || "Khác").trim() || "Khác"))];
+      const groups = [...new Set(
+        menuItems.map(i => String(i.group || "Khác").trim() || "Khác")
+      )];
       return ["Tất cả", ...groups];
     }
 
     function renderGroupControls(){
       const groups = getGroups();
 
-      document.getElementById("groupSelect").innerHTML = groups.map(g => `
-        <option value="${escapeHtml(g)}" ${g === activeGroup ? "selected" : ""}>${escapeHtml(g)}</option>
+      $("groupSelect").innerHTML = groups.map(g => `
+        <option value="${escapeAttr(g)}" ${g === activeGroup ? "selected" : ""}>${escapeHtml(g)}</option>
       `).join("");
 
-      document.getElementById("groupTabs").innerHTML = groups.map(g => `
+      $("groupTabs").innerHTML = groups.map(g => `
         <button type="button" class="group-tab ${g === activeGroup ? "active" : ""}" onclick="setGroup('${escapeJs(g)}')">${escapeHtml(g)}</button>
       `).join("");
     }
@@ -926,39 +1003,46 @@
 
     function resetFilters(){
       activeGroup = "Tất cả";
-      document.getElementById("searchInput").value = "";
+      $("searchInput").value = "";
       renderGroupControls();
       renderMenu();
     }
 
     function getFilteredItems(){
-      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const keyword = $("searchInput").value.trim().toLowerCase();
+
       return menuItems.filter(item => {
-        const matchGroup = activeGroup === "Tất cả" || (item.group || "Khác") === activeGroup;
-        const matchKeyword = !keyword || (item.name || "").toLowerCase().includes(keyword);
+        const itemGroup = String(item.group || "Khác").trim() || "Khác";
+        const itemName = String(item.name || "");
+        const matchGroup = activeGroup === "Tất cả" || itemGroup === activeGroup;
+        const matchKeyword = !keyword || itemName.toLowerCase().includes(keyword);
         return matchGroup && matchKeyword;
       });
     }
 
     function renderMenu(){
       const items = getFilteredItems();
-      document.getElementById("menuCountText").textContent = items.length + " món";
+      $("menuCountText").textContent = items.length + " món";
 
       if (!items.length){
-        document.getElementById("menuContainer").innerHTML = `<div class="empty">Không có món nào phù hợp với bộ lọc hiện tại.</div>`;
+        $("menuContainer").innerHTML = `<div class="empty">Không có món nào phù hợp với bộ lọc hiện tại.</div>`;
         return;
       }
 
-      document.getElementById("menuContainer").innerHTML = items.map(item => {
+      $("menuContainer").innerHTML = items.map(item => {
         const qty = cart[item.id]?.quantity || 0;
+        const imageSrc = item.image ? escapeAttr(item.image) : escapeAttr(getFallbackImage(item.name));
+        const fallback = escapeJs(getFallbackImage(item.name));
+
         return `
           <div class="item-card">
             <div class="item-thumb-wrap">
               <img
                 class="item-thumb"
-                src="${escapeAttr(item.image || "")}"
+                src="${imageSrc}"
                 alt="${escapeAttr(item.name || "")}"
-                onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='${fallback}'"
               />
               <div class="item-group">${escapeHtml(item.group || "Khác")}</div>
             </div>
@@ -1034,21 +1118,19 @@
       const totalQty = getCartTotalQty();
       const total = getCartTotal();
 
-      document.getElementById("floatingCartCount").textContent = totalQty;
-      document.getElementById("cartTotalQty").textContent = totalQty;
-      document.getElementById("cartDistinctCount").textContent = items.length;
-      document.getElementById("cartTotalTop").textContent = formatCurrency(total);
-      document.getElementById("cartQtyMetric").textContent = totalQty;
-      document.getElementById("cartValueMetric").textContent = formatCurrency(total);
-
-      const cartItems = document.getElementById("cartItems");
+      $("floatingCartCount").textContent = totalQty;
+      $("cartTotalQty").textContent = totalQty;
+      $("cartDistinctCount").textContent = items.length;
+      $("cartTotalTop").textContent = formatCurrency(total);
+      $("cartQtyMetric").textContent = totalQty;
+      $("cartValueMetric").textContent = formatCurrency(total);
 
       if (!items.length){
-        cartItems.innerHTML = `<div class="empty">Chưa có món nào trong giỏ hàng.</div>`;
+        $("cartItems").innerHTML = `<div class="empty">Chưa có món nào trong giỏ hàng.</div>`;
         return;
       }
 
-      cartItems.innerHTML = items.map(item => {
+      $("cartItems").innerHTML = items.map(item => {
         const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
         return `
           <div class="cart-item">
@@ -1082,8 +1164,8 @@
     }
 
     function toggleCart(show){
-      document.getElementById("cartOverlay").classList.toggle("show", show);
-      document.getElementById("cartDrawer").classList.toggle("show", show);
+      $("cartOverlay").classList.toggle("show", !!show);
+      $("cartDrawer").classList.toggle("show", !!show);
     }
 
     async function placeOrder(buttonEl){
@@ -1100,22 +1182,9 @@
       }
 
       try{
-        const res = await fetch(API, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify({
-            action: "createOrder",
-            order: { items: items }
-          })
+        await apiRequest("createOrder", {
+          order: { items }
         });
-
-        const data = await res.json();
-
-        if (!data.success){
-          throw new Error(data.message || "Không lưu được đơn hàng");
-        }
 
         cart = {};
         saveCart();
@@ -1123,11 +1192,10 @@
         renderCart();
         toggleCart(false);
         showToast("Đặt đơn thành công");
-        await loadReport();
-        await loadHistory();
+        await Promise.allSettled([loadReport(), loadHistory()]);
       } catch(err){
         console.error(err);
-        showToast("Lỗi: " + err.message);
+        showToast("Lỗi đặt đơn: " + err.message);
       } finally {
         if (buttonEl){
           buttonEl.disabled = false;
@@ -1137,39 +1205,87 @@
     }
 
     async function fetchMenu(){
-      document.getElementById("menuContainer").innerHTML = `<div class="empty">Đang tải danh sách món...</div>`;
-      const res = await fetch(API + "?action=menu");
-      const data = await res.json();
+      $("menuContainer").innerHTML = `<div class="empty">Đang tải danh sách món...</div>`;
 
-      if (!data.success){
-        throw new Error(data.message || "Không tải được menu");
-      }
+      const data = await apiRequest("menu");
+      menuItems = Array.isArray(data) ? data : [];
 
-      menuItems = data.data || [];
       renderGroupControls();
       renderMenu();
+
+      if (!menuItems.length){
+        showToast("Menu đang trống hoặc chưa có dữ liệu trong sheet Menu");
+      }
+    }
+
+    function renderItemsPreview(items){
+      if (!items || !items.length) {
+        return '<span style="color:#64748b;">Không có dữ liệu chi tiết</span>';
+      }
+
+      return items.map(item =>
+        `${escapeHtml(item.name)} x ${Number(item.quantity || 0)}`
+      ).join("<br>");
+    }
+
+    function ensureDefaultDateFilters(){
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const todayText = formatDateInput(today);
+      const firstText = formatDateInput(firstDay);
+
+      if (!$("reportFromDate").value) $("reportFromDate").value = firstText;
+      if (!$("reportToDate").value) $("reportToDate").value = todayText;
+
+      if (!$("historyFromDate").value) $("historyFromDate").value = firstText;
+      if (!$("historyToDate").value) $("historyToDate").value = todayText;
+    }
+
+    function validateDateRange(fromDate, toDate){
+      if (fromDate && toDate && fromDate > toDate){
+        throw new Error("Ngày bắt đầu không được lớn hơn ngày kết thúc");
+      }
     }
 
     async function loadReport(){
       try{
         ensureDefaultDateFilters();
 
-        const fromDate = document.getElementById("reportFromDate").value;
-        const toDate = document.getElementById("reportToDate").value;
+        const fromDate = $("reportFromDate").value;
+        const toDate = $("reportToDate").value;
+        validateDateRange(fromDate, toDate);
 
-        const res = await fetch(API + "?action=report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
-        const data = await res.json();
+        const data = await apiRequest("report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
+      } catch (err) {
+        // fallback to proper request below
+      }
 
-        if (!data.success){
+      try{
+        ensureDefaultDateFilters();
+
+        const fromDate = $("reportFromDate").value;
+        const toDate = $("reportToDate").value;
+        validateDateRange(fromDate, toDate);
+
+        const res = await fetch(
+          API + "?action=report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate) + "&_t=" + Date.now(),
+          { cache: "no-store" }
+        );
+
+        const raw = await res.text();
+        const data = JSON.parse(raw);
+
+        if (!res.ok || !data.success){
           throw new Error(data.message || "Không tải được số liệu");
         }
 
-        document.getElementById("reportRevenue").textContent = formatCurrency(data.data.totalRevenue || 0);
-        document.getElementById("reportOrders").textContent = Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
-        document.getElementById("reportQty").textContent = Number(data.data.totalQty || 0).toLocaleString("vi-VN");
+        $("reportRevenue").textContent = formatCurrency(data.data.totalRevenue || 0);
+        $("reportOrders").textContent = Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
+        $("reportQty").textContent = Number(data.data.totalQty || 0).toLocaleString("vi-VN");
 
         const orders = data.data.orders || [];
-        document.getElementById("reportTableBody").innerHTML = orders.length
+        $("reportTableBody").innerHTML = orders.length
           ? orders.map(order => `
               <tr>
                 <td>${escapeHtml(order.time)}</td>
@@ -1181,6 +1297,7 @@
           : `<tr><td colspan="4" class="empty">Không có dữ liệu trong khoảng ngày đã chọn</td></tr>`;
       } catch(err){
         console.error(err);
+        $("reportTableBody").innerHTML = `<tr><td colspan="4" class="empty">Lỗi tải số liệu</td></tr>`;
         showToast("Lỗi số liệu: " + err.message);
       }
     }
@@ -1189,19 +1306,25 @@
       try{
         ensureDefaultDateFilters();
 
-        const fromDate = document.getElementById("historyFromDate").value;
-        const toDate = document.getElementById("historyToDate").value;
+        const fromDate = $("historyFromDate").value;
+        const toDate = $("historyToDate").value;
+        validateDateRange(fromDate, toDate);
 
-        const res = await fetch(API + "?action=orders&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
-        const data = await res.json();
+        const res = await fetch(
+          API + "?action=orders&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate) + "&_t=" + Date.now(),
+          { cache: "no-store" }
+        );
 
-        if (!data.success){
+        const raw = await res.text();
+        const data = JSON.parse(raw);
+
+        if (!res.ok || !data.success){
           throw new Error(data.message || "Không tải được lịch sử");
         }
 
-        historyOrders = data.data || [];
+        historyOrders = Array.isArray(data.data) ? data.data : [];
 
-        document.getElementById("historyTableBody").innerHTML = historyOrders.length
+        $("historyTableBody").innerHTML = historyOrders.length
           ? historyOrders.map(order => `
               <tr>
                 <td>${escapeHtml(order.time)}</td>
@@ -1214,46 +1337,42 @@
           : `<tr><td colspan="5" class="empty">Không có lịch sử đơn trong khoảng ngày đã chọn</td></tr>`;
       } catch(err){
         console.error(err);
+        $("historyTableBody").innerHTML = `<tr><td colspan="5" class="empty">Lỗi tải lịch sử</td></tr>`;
         showToast("Lỗi lịch sử: " + err.message);
       }
     }
 
-    function renderItemsPreview(items){
-      if (!items || !items.length) return '<span style="color:#64748b;">Không có dữ liệu chi tiết</span>';
-      return items.map(item =>
-        `${escapeHtml(item.name)} x ${Number(item.quantity || 0)}`
-      ).join("<br>");
-    }
-
     function openEditModal(orderCode){
       const order = historyOrders.find(x => x.orderCode === orderCode);
-      if (!order) return;
+      if (!order) {
+        showToast("Không tìm thấy đơn hàng để sửa");
+        return;
+      }
 
       editingOrder = JSON.parse(JSON.stringify(order));
 
-      document.getElementById("editOrderInfo").innerHTML =
+      $("editOrderInfo").innerHTML =
         `Mã đơn: <strong>${escapeHtml(order.orderCode)}</strong> • Thời gian: <strong>${escapeHtml(order.time)}</strong>`;
 
       renderEditItems();
-      document.getElementById("editModalOverlay").classList.add("show");
+      $("editModalOverlay").classList.add("show");
     }
 
     function closeEditModal(){
       editingOrder = null;
-      document.getElementById("editModalOverlay").classList.remove("show");
+      $("editModalOverlay").classList.remove("show");
     }
 
     function renderEditItems(){
       if (!editingOrder) return;
 
-      const wrap = document.getElementById("editItemsContainer");
-      const items = editingOrder.items || [];
+      const items = Array.isArray(editingOrder.items) ? editingOrder.items : [];
 
-      wrap.innerHTML = items.length ? items.map((item, idx) => `
+      $("editItemsContainer").innerHTML = items.length ? items.map((item, idx) => `
         <div class="cart-item">
           <div class="cart-item-top">
             <div>
-              <div class="cart-item-name">${escapeHtml(item.name)}</div>
+              <div class="cart-item-name">${escapeHtml(item.name || "")}</div>
               <div class="cart-item-line">Đơn giá: ${formatCurrency(item.price)}</div>
             </div>
             <div class="cart-item-total">${formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}</div>
@@ -1262,7 +1381,7 @@
           <div class="cart-item-actions">
             <div class="qty-controls">
               <button type="button" class="qty-btn" onclick="changeEditQty(${idx}, -1)">−</button>
-              <div class="qty-num">${item.quantity}</div>
+              <div class="qty-num">${Number(item.quantity || 0)}</div>
               <button type="button" class="qty-btn" onclick="changeEditQty(${idx}, 1)">+</button>
             </div>
             <button type="button" class="btn btn-danger" onclick="removeEditItem(${idx})">Xóa món</button>
@@ -1271,7 +1390,7 @@
       `).join("") : `<div class="empty">Đơn hàng này không còn món nào.</div>`;
 
       const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
-      document.getElementById("editOrderTotal").textContent = "Tổng mới: " + formatCurrency(total);
+      $("editOrderTotal").textContent = "Tổng mới: " + formatCurrency(total);
     }
 
     function changeEditQty(index, delta){
@@ -1303,48 +1422,18 @@
       }
 
       try{
-        const res = await fetch(API, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify({
-            action: "updateOrder",
-            orderCode: editingOrder.orderCode,
-            order: {
-              items: editingOrder.items
-            }
-          })
+        await apiRequest("updateOrder", {
+          orderCode: editingOrder.orderCode,
+          order: { items: editingOrder.items }
         });
-
-        const data = await res.json();
-
-        if (!data.success){
-          throw new Error(data.message || "Không lưu được thay đổi");
-        }
 
         closeEditModal();
         showToast("Đã cập nhật đơn hàng");
-        await loadReport();
-        await loadHistory();
+        await Promise.allSettled([loadReport(), loadHistory()]);
       } catch(err){
         console.error(err);
         showToast("Lỗi cập nhật: " + err.message);
       }
-    }
-
-    function ensureDefaultDateFilters(){
-      const today = new Date();
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-
-      const todayText = formatDateInput(today);
-      const firstText = formatDateInput(firstDay);
-
-      if (!document.getElementById("reportFromDate").value) document.getElementById("reportFromDate").value = firstText;
-      if (!document.getElementById("reportToDate").value) document.getElementById("reportToDate").value = todayText;
-
-      if (!document.getElementById("historyFromDate").value) document.getElementById("historyFromDate").value = firstText;
-      if (!document.getElementById("historyToDate").value) document.getElementById("historyToDate").value = todayText;
     }
 
     function formatDateInput(date){
@@ -1354,41 +1443,30 @@
       return `${y}-${m}-${d}`;
     }
 
-    function escapeHtml(text){
-      return String(text || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function escapeAttr(text){
-      return escapeHtml(text);
-    }
-
-    function escapeJs(text){
-      return String(text || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    }
-
-    document.getElementById("searchInput").addEventListener("input", renderMenu);
-    document.getElementById("groupSelect").addEventListener("change", function(){
-      activeGroup = this.value;
-      renderGroupControls();
-      renderMenu();
-    });
-
     async function init(){
       loadCart();
       renderCart();
       ensureDefaultDateFilters();
-      await fetchMenu();
+
+      $("searchInput").addEventListener("input", renderMenu);
+      $("groupSelect").addEventListener("change", function(){
+        activeGroup = this.value;
+        renderGroupControls();
+        renderMenu();
+      });
+
+      try{
+        await fetchMenu();
+      } catch(err){
+        console.error(err);
+        $("menuContainer").innerHTML = `<div class="empty">Lỗi tải menu: ${escapeHtml(err.message)}</div>`;
+        showToast("Lỗi menu: " + err.message);
+      }
+
+      await Promise.allSettled([loadReport(), loadHistory()]);
     }
 
-    init().catch(err => {
-      console.error(err);
-      document.getElementById("menuContainer").innerHTML = `<div class="empty">Lỗi tải dữ liệu: ${escapeHtml(err.message)}</div>`;
-    });
+    document.addEventListener("DOMContentLoaded", init);
   </script>
 </body>
 </html>
