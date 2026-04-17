@@ -18,41 +18,38 @@
       --danger:#dc2626;
       --warning:#f59e0b;
       --shadow:0 10px 30px rgba(15,23,42,.08);
-      --radius:18px;
-      --radius-sm:12px;
     }
 
     *{box-sizing:border-box}
     html,body{margin:0;padding:0}
     body{
-      font-family: Inter, Arial, sans-serif;
-      background: linear-gradient(180deg,#f8fbff 0%,#f4f7fb 100%);
+      font-family:Inter, Arial, sans-serif;
+      background:linear-gradient(180deg,#f8fbff 0%,#f4f7fb 100%);
       color:var(--text);
-    }
-
-    .app{
-      min-height:100vh;
     }
 
     .topbar{
       position:sticky;
       top:0;
-      z-index:40;
-      backdrop-filter: blur(12px);
-      background:rgba(255,255,255,.88);
-      border-bottom:1px solid rgba(226,232,240,.9);
+      z-index:50;
+      backdrop-filter:blur(12px);
+      background:rgba(255,255,255,.9);
+      border-bottom:1px solid var(--border);
       padding:14px 18px;
+    }
+
+    .topbar-row{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:16px;
+      flex-wrap:wrap;
     }
 
     .brand{
       display:flex;
       align-items:center;
       gap:12px;
-      min-width:0;
     }
 
     .brand-badge{
@@ -71,48 +68,67 @@
 
     .brand-text h1{
       margin:0;
-      font-size:20px;
-      line-height:1.1;
+      font-size:22px;
     }
 
     .brand-text p{
       margin:4px 0 0;
-      font-size:13px;
       color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:420px;
+      font-size:13px;
     }
 
-    .top-actions{
+    .tabs{
       display:flex;
-      align-items:center;
       gap:10px;
       flex-wrap:wrap;
-      justify-content:flex-end;
+      margin-top:14px;
     }
 
-    .mini-stat{
-      background:var(--panel);
-      border:1px solid var(--border);
+    .tab-btn{
+      border:none;
+      background:#eef2ff;
+      color:#1e3a8a;
       border-radius:999px;
-      padding:10px 14px;
-      font-size:13px;
-      color:var(--muted);
-      box-shadow:var(--shadow);
-      white-space:nowrap;
+      padding:10px 16px;
+      font-weight:800;
+      cursor:pointer;
     }
 
-    .cart-toggle{
+    .tab-btn.active{
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#fff;
+    }
+
+    .cart-launch-row{
+      margin-top:14px;
+    }
+
+    .cart-handle-top{
       border:none;
       background:linear-gradient(135deg,var(--primary),var(--primary-2));
       color:#fff;
       border-radius:999px;
       padding:12px 16px;
+      font-weight:800;
       cursor:pointer;
-      font-weight:700;
       box-shadow:var(--shadow);
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .cart-badge{
+      min-width:28px;
+      height:28px;
+      border-radius:999px;
+      background:#fff;
+      color:var(--primary);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 8px;
+      font-size:13px;
+      font-weight:900;
     }
 
     .container{
@@ -121,21 +137,35 @@
       padding:22px;
     }
 
+    .section{
+      display:none;
+    }
+
+    .section.active{
+      display:block;
+    }
+
+    .panel{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin-bottom:18px;
+    }
+
     .hero{
       display:grid;
-      grid-template-columns: 1.3fr .9fr;
+      grid-template-columns:1.3fr .9fr;
       gap:18px;
       margin-bottom:18px;
     }
 
-    .hero-card, .summary-card, .toolbar-card, .menu-shell{
-      background:var(--panel);
+    .hero-card{
+      background:#fff;
       border:1px solid var(--border);
       border-radius:24px;
       box-shadow:var(--shadow);
-    }
-
-    .hero-card{
       padding:24px;
       background:
         radial-gradient(circle at top right, rgba(37,99,235,.12), transparent 30%),
@@ -145,23 +175,23 @@
     .hero-card h2{
       margin:0 0 10px;
       font-size:30px;
-      line-height:1.1;
     }
 
     .hero-card p{
       margin:0;
       color:var(--muted);
-      font-size:15px;
       line-height:1.6;
-      max-width:760px;
     }
 
     .summary-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
       padding:18px;
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:12px;
-      align-content:center;
     }
 
     .metric{
@@ -182,14 +212,9 @@
       font-weight:800;
     }
 
-    .toolbar-card{
-      padding:16px;
-      margin-bottom:18px;
-    }
-
     .toolbar{
       display:grid;
-      grid-template-columns: 1.4fr .8fr auto;
+      grid-template-columns:1.4fr .8fr auto;
       gap:12px;
       align-items:center;
     }
@@ -202,22 +227,35 @@
       padding:13px 14px;
       font-size:14px;
       outline:none;
-      transition:.2s ease;
     }
 
-    .input:focus, .select:focus{
-      border-color:#93c5fd;
-      box-shadow:0 0 0 4px rgba(59,130,246,.12);
-    }
-
-    .toolbar-btn{
+    .toolbar-btn, .btn{
       border:none;
-      background:#0f172a;
-      color:#fff;
       border-radius:14px;
       padding:13px 16px;
       cursor:pointer;
-      font-weight:700;
+      font-weight:800;
+      font-size:14px;
+    }
+
+    .toolbar-btn{
+      background:#0f172a;
+      color:#fff;
+    }
+
+    .btn-primary{
+      background:linear-gradient(135deg,var(--success),#15803d);
+      color:#fff;
+    }
+
+    .btn-light{
+      background:#eff6ff;
+      color:#1e3a8a;
+    }
+
+    .btn-danger{
+      background:#fee2e2;
+      color:#991b1b;
     }
 
     .group-tabs{
@@ -236,35 +274,12 @@
       font-size:13px;
       font-weight:700;
       cursor:pointer;
-      transition:.2s ease;
     }
 
     .group-tab.active{
       background:var(--primary);
       color:#fff;
       border-color:var(--primary);
-    }
-
-    .menu-shell{
-      padding:18px;
-    }
-
-    .menu-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:14px;
-    }
-
-    .menu-head h3{
-      margin:0;
-      font-size:18px;
-    }
-
-    .menu-head span{
-      color:var(--muted);
-      font-size:14px;
     }
 
     .menu-grid{
@@ -323,7 +338,6 @@
     .item-name{
       font-size:16px;
       font-weight:800;
-      line-height:1.35;
       min-height:44px;
       margin-bottom:8px;
     }
@@ -361,7 +375,6 @@
       cursor:pointer;
       font-size:20px;
       line-height:1;
-      box-shadow:0 1px 3px rgba(15,23,42,.08);
     }
 
     .qty-num{
@@ -378,45 +391,6 @@
       padding:10px 14px;
       font-weight:800;
       cursor:pointer;
-    }
-
-    .empty{
-      padding:40px 20px;
-      text-align:center;
-      color:var(--muted);
-      font-size:15px;
-    }
-
-    .cart-handle{
-      position:fixed;
-      right:18px;
-      bottom:18px;
-      z-index:70;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      border:none;
-      cursor:pointer;
-      border-radius:999px;
-      background:linear-gradient(135deg,var(--primary),var(--primary-2));
-      color:#fff;
-      box-shadow:0 20px 40px rgba(37,99,235,.35);
-      padding:14px 16px;
-      font-weight:800;
-    }
-
-    .cart-handle .badge{
-      min-width:28px;
-      height:28px;
-      border-radius:999px;
-      background:#fff;
-      color:var(--primary);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:0 8px;
-      font-size:13px;
-      font-weight:900;
     }
 
     .cart-overlay{
@@ -458,15 +432,9 @@
       padding:18px;
       border-bottom:1px solid var(--border);
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:12px;
-    }
-
-    .cart-title{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
     }
 
     .cart-title h3{
@@ -475,7 +443,7 @@
     }
 
     .cart-title p{
-      margin:0;
+      margin:4px 0 0;
       color:var(--muted);
       font-size:13px;
     }
@@ -488,6 +456,31 @@
       background:#f1f5f9;
       cursor:pointer;
       font-size:18px;
+    }
+
+    .cart-top-total{
+      padding:16px 18px 8px;
+      border-bottom:1px solid var(--border);
+    }
+
+    .cart-top-total .label{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:6px;
+    }
+
+    .cart-top-total .value{
+      font-size:24px;
+      font-weight:900;
+      color:var(--danger);
+    }
+
+    .cart-top-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      padding:12px 18px 16px;
+      border-bottom:1px solid var(--border);
     }
 
     .cart-body{
@@ -503,7 +496,6 @@
       border-radius:18px;
       padding:14px;
       margin-bottom:12px;
-      box-shadow:0 8px 20px rgba(15,23,42,.04);
     }
 
     .cart-item-top{
@@ -562,38 +554,32 @@
       font-size:14px;
     }
 
-    .cart-total{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin:14px 0 16px;
-      font-size:22px;
-      font-weight:900;
-    }
-
-    .action-row{
+    .cards-grid{
       display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-bottom:18px;
     }
 
-    .btn{
-      border:none;
-      border-radius:14px;
-      padding:14px 16px;
-      font-weight:800;
-      cursor:pointer;
+    .report-table, .history-table{
+      width:100%;
+      border-collapse:collapse;
       font-size:14px;
+      background:#fff;
+      border-radius:16px;
+      overflow:hidden;
     }
 
-    .btn-light{
-      background:#eff6ff;
-      color:#1e3a8a;
+    .report-table th, .report-table td,
+    .history-table th, .history-table td{
+      border-bottom:1px solid var(--border);
+      padding:12px;
+      text-align:left;
+      vertical-align:top;
     }
 
-    .btn-primary{
-      background:linear-gradient(135deg,var(--success),#15803d);
-      color:#fff;
+    .report-table th, .history-table th{
+      background:#f8fafc;
     }
 
     .toast{
@@ -618,100 +604,99 @@
       transform:translateX(-50%) translateY(0);
     }
 
-    .loading{
-      padding:50px 20px;
+    .empty{
+      padding:32px 20px;
       text-align:center;
       color:var(--muted);
     }
 
-    @media (max-width: 980px){
-      .hero{
-        grid-template-columns:1fr;
-      }
+    .modal-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.4);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:90;
+      padding:20px;
+    }
 
-      .toolbar{
-        grid-template-columns:1fr;
-      }
+    .modal-overlay.show{
+      display:flex;
+    }
+
+    .modal{
+      width:min(720px, 100%);
+      background:#fff;
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:20px;
+      max-height:90vh;
+      overflow:auto;
+    }
+
+    .modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .modal-header h3{
+      margin:0;
+    }
+
+    @media (max-width: 980px){
+      .hero{ grid-template-columns:1fr; }
+      .toolbar{ grid-template-columns:1fr; }
     }
 
     @media (max-width: 720px){
-      .topbar{
-        align-items:flex-start;
-        flex-direction:column;
-      }
-
-      .top-actions{
-        width:100%;
-        justify-content:flex-start;
-      }
-
-      .brand-text p{
-        max-width:100%;
-      }
-
-      .container{
-        padding:14px;
-      }
-
-      .hero-card h2{
-        font-size:24px;
-      }
-
       .menu-grid{
         grid-template-columns:repeat(2,minmax(0,1fr));
         gap:12px;
       }
-
-      .item-thumb{
-        height:135px;
-      }
-    }
-
-    @media (max-width: 480px){
-      .menu-grid{
-        grid-template-columns:1fr 1fr;
-      }
-
-      .summary-card{
-        grid-template-columns:1fr;
-      }
+      .item-thumb{ height:135px; }
+      .summary-card{ grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
+  <header class="topbar">
+    <div class="topbar-row">
       <div class="brand">
         <div class="brand-badge">🍹</div>
         <div class="brand-text">
           <h1>vShop - Quản lý bán hàng</h1>
+          <p>Bán hàng nhanh, quản lý số liệu và chỉnh sửa lịch sử đơn hàng</p>
         </div>
       </div>
+    </div>
 
-      <div class="top-actions">
-        <div class="mini-stat" id="todayRevenueTop">Doanh thu hôm nay: 0 VNĐ</div>
-        <div class="mini-stat" id="todayOrdersTop">Số đơn hôm nay: 0</div>
-      </div>
-    </header>
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="menu" onclick="switchTab('menu')">Menu</button>
+      <button type="button" class="tab-btn" data-tab="report" onclick="switchTab('report')">Số liệu</button>
+      <button type="button" class="tab-btn" data-tab="history" onclick="switchTab('history')">Lịch sử đặt đơn</button>
+    </div>
 
-    <main class="container">
-      <section class="hero">
+    <div class="cart-launch-row">
+      <button type="button" class="cart-handle-top" onclick="toggleCart(true)">
+        <span>🛒 Giỏ hàng</span>
+        <span class="cart-badge" id="floatingCartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="section-menu" class="section active">
+      <div class="hero">
         <div class="hero-card">
-          <h2>Hướng dẫn sử dụng</h2>
-          <p>
-            Chọn món ngay trên màn hình, theo dõi giỏ hàng bằng thanh trượt bên phải và bấm nút đặt đơn
-          </p>
+          <h2>Menu bán hàng</h2>
+          <p>Chọn món, tăng giảm số lượng, kiểm soát giỏ hàng nhanh bằng thanh trượt bên phải.</p>
         </div>
 
         <div class="summary-card">
-          <div class="metric">
-            <div class="metric-label">Doanh thu hôm nay</div>
-            <div class="metric-value" id="todayRevenue">0 VNĐ</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Số đơn hôm nay</div>
-            <div class="metric-value" id="todayOrders">0</div>
-          </div>
           <div class="metric">
             <div class="metric-label">Tổng số lượng trong giỏ</div>
             <div class="metric-value" id="cartQtyMetric">0</div>
@@ -721,33 +706,103 @@
             <div class="metric-value" id="cartValueMetric">0 VNĐ</div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="toolbar-card">
+      <div class="panel">
         <div class="toolbar">
           <input id="searchInput" class="input" type="text" placeholder="Tìm món theo tên..." />
           <select id="groupSelect" class="select"></select>
-          <button class="toolbar-btn" onclick="resetFilters()">Đặt lại bộ lọc</button>
+          <button type="button" class="toolbar-btn" onclick="resetFilters()">Đặt lại bộ lọc</button>
         </div>
         <div class="group-tabs" id="groupTabs"></div>
-      </section>
+      </div>
 
-      <section class="menu-shell">
-        <div class="menu-head">
-          <h3>Danh sách món</h3>
-          <span id="menuCountText">0 món</span>
+      <div class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+          <h3 style="margin:0;">Danh sách món</h3>
+          <span id="menuCountText" style="color:var(--muted);font-size:14px;">0 món</span>
         </div>
         <div id="menuContainer" class="menu-grid">
-          <div class="loading">Đang tải danh sách món...</div>
+          <div class="empty">Đang tải danh sách món...</div>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
 
-  <button class="cart-handle" onclick="toggleCart(true)">
-    <span>🛒 Giỏ hàng</span>
-    <span class="badge" id="floatingCartCount">0</span>
-  </button>
+    <section id="section-report" class="section">
+      <div class="panel">
+        <h3 style="margin-top:0;">Số liệu doanh thu</h3>
+        <div class="toolbar" style="grid-template-columns:1fr 1fr auto;">
+          <input id="reportFromDate" class="input" type="date" />
+          <input id="reportToDate" class="input" type="date" />
+          <button type="button" class="toolbar-btn" onclick="loadReport()">Xem số liệu</button>
+        </div>
+      </div>
+
+      <div class="cards-grid">
+        <div class="metric">
+          <div class="metric-label">Doanh thu</div>
+          <div class="metric-value" id="reportRevenue">0 VNĐ</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Số đơn</div>
+          <div class="metric-value" id="reportOrders">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Tổng số lượng bán</div>
+          <div class="metric-value" id="reportQty">0</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;">Danh sách đơn trong khoảng lọc</h3>
+        <div style="overflow:auto;">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Mã đơn</th>
+                <th>Tổng SL</th>
+                <th>Tổng tiền</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody">
+              <tr><td colspan="4" class="empty">Chưa có dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-history" class="section">
+      <div class="panel">
+        <h3 style="margin-top:0;">Lịch sử đặt đơn</h3>
+        <div class="toolbar" style="grid-template-columns:1fr 1fr auto;">
+          <input id="historyFromDate" class="input" type="date" />
+          <input id="historyToDate" class="input" type="date" />
+          <button type="button" class="toolbar-btn" onclick="loadHistory()">Tải lịch sử</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="overflow:auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Mã đơn</th>
+                <th>Chi tiết</th>
+                <th>Tổng tiền</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="5" class="empty">Chưa có dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <div id="cartOverlay" class="cart-overlay" onclick="toggleCart(false)"></div>
 
@@ -757,11 +812,17 @@
         <h3>Giỏ hàng</h3>
         <p>Theo dõi món đã chọn và xác nhận đơn</p>
       </div>
-      <button class="icon-btn" onclick="toggleCart(false)">→</button>
+      <button type="button" class="icon-btn" onclick="toggleCart(false)">→</button>
     </div>
-    <div class="action-row">
-      <button class="btn btn-light" onclick="clearCart()">Xóa giỏ</button>
-      <button class="btn btn-primary" onclick="placeOrder()">Đặt đơn</button>
+
+    <div class="cart-top-total">
+      <div class="label">Tổng tiền hiện tại</div>
+      <div class="value" id="cartTotalTop">0 VNĐ</div>
+    </div>
+
+    <div class="cart-top-actions">
+      <button type="button" class="btn btn-light" onclick="clearCart()">Xóa giỏ</button>
+      <button type="button" id="placeOrderBtn" class="btn btn-primary" onclick="placeOrder(this)">Đặt đơn</button>
     </div>
 
     <div class="cart-body" id="cartItems"></div>
@@ -775,21 +836,37 @@
         <span>Số món khác nhau</span>
         <strong id="cartDistinctCount">0</strong>
       </div>
-      <div class="cart-total">
-        <span>Tổng tiền</span>
-        <span id="cartTotal">0 VNĐ</span>
-      </div>
     </div>
   </aside>
+
+  <div id="editModalOverlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Sửa đơn hàng</h3>
+        <button type="button" class="icon-btn" onclick="closeEditModal()">✕</button>
+      </div>
+      <div id="editOrderInfo" style="margin-bottom:16px;color:var(--muted);"></div>
+      <div id="editItemsContainer"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
+        <strong id="editOrderTotal">0 VNĐ</strong>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn btn-light" onclick="closeEditModal()">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="saveEditedOrder()">Lưu thay đổi</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
 
   <script>
-    const API = "https://script.google.com/macros/s/AKfycbz3XWqqLYNVt5X03qAgro9PZDuebR7DDVVN4CZ8z31dJ6mI9_AkSng1cbXmYRe12_fY/exec";
+    const API = "https://script.google.com/macros/s/AKfycby_L4sWohP1_lX4VyyyoLP1T6dcNwvjlk1tlwE6PXHU3VCXS-UZiQ80s8NPQcRolYeQ/exec";
 
     let menuItems = [];
     let cart = {};
     let activeGroup = "Tất cả";
+    let historyOrders = [];
+    let editingOrder = null;
 
     const formatCurrency = (n) => Number(n || 0).toLocaleString("vi-VN") + " VNĐ";
 
@@ -799,6 +876,17 @@
       el.classList.add("show");
       clearTimeout(window.__toastTimer);
       window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    function switchTab(tabName){
+      document.querySelectorAll(".section").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+
+      document.getElementById("section-" + tabName).classList.add("active");
+      document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add("active");
+
+      if (tabName === "report") loadReport();
+      if (tabName === "history") loadHistory();
     }
 
     function saveCart(){
@@ -821,14 +909,12 @@
     function renderGroupControls(){
       const groups = getGroups();
 
-      const groupSelect = document.getElementById("groupSelect");
-      groupSelect.innerHTML = groups.map(g => `
+      document.getElementById("groupSelect").innerHTML = groups.map(g => `
         <option value="${escapeHtml(g)}" ${g === activeGroup ? "selected" : ""}>${escapeHtml(g)}</option>
       `).join("");
 
-      const groupTabs = document.getElementById("groupTabs");
-      groupTabs.innerHTML = groups.map(g => `
-        <button class="group-tab ${g === activeGroup ? "active" : ""}" onclick="setGroup('${escapeJs(g)}')">${escapeHtml(g)}</button>
+      document.getElementById("groupTabs").innerHTML = groups.map(g => `
+        <button type="button" class="group-tab ${g === activeGroup ? "active" : ""}" onclick="setGroup('${escapeJs(g)}')">${escapeHtml(g)}</button>
       `).join("");
     }
 
@@ -855,16 +941,15 @@
     }
 
     function renderMenu(){
-      const container = document.getElementById("menuContainer");
       const items = getFilteredItems();
       document.getElementById("menuCountText").textContent = items.length + " món";
 
       if (!items.length){
-        container.innerHTML = `<div class="empty">Không có món nào phù hợp với bộ lọc hiện tại.</div>`;
+        document.getElementById("menuContainer").innerHTML = `<div class="empty">Không có món nào phù hợp với bộ lọc hiện tại.</div>`;
         return;
       }
 
-      container.innerHTML = items.map(item => {
+      document.getElementById("menuContainer").innerHTML = items.map(item => {
         const qty = cart[item.id]?.quantity || 0;
         return `
           <div class="item-card">
@@ -880,14 +965,13 @@
             <div class="item-body">
               <div class="item-name">${escapeHtml(item.name || "")}</div>
               <div class="item-price">${formatCurrency(item.price)}</div>
-
               <div class="qty-row">
                 <div class="qty-controls">
-                  <button class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', -1)">−</button>
+                  <button type="button" class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', -1)">−</button>
                   <div class="qty-num">${qty}</div>
-                  <button class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', 1)">+</button>
+                  <button type="button" class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', 1)">+</button>
                 </div>
-                <button class="add-btn" onclick="quickAdd('${escapeJs(item.id)}')">Thêm</button>
+                <button type="button" class="add-btn" onclick="quickAdd('${escapeJs(item.id)}')">Thêm</button>
               </div>
             </div>
           </div>
@@ -947,16 +1031,17 @@
 
     function renderCart(){
       const items = getCartArray();
-      const cartItems = document.getElementById("cartItems");
       const totalQty = getCartTotalQty();
       const total = getCartTotal();
 
       document.getElementById("floatingCartCount").textContent = totalQty;
       document.getElementById("cartTotalQty").textContent = totalQty;
       document.getElementById("cartDistinctCount").textContent = items.length;
-      document.getElementById("cartTotal").textContent = formatCurrency(total);
+      document.getElementById("cartTotalTop").textContent = formatCurrency(total);
       document.getElementById("cartQtyMetric").textContent = totalQty;
       document.getElementById("cartValueMetric").textContent = formatCurrency(total);
+
+      const cartItems = document.getElementById("cartItems");
 
       if (!items.length){
         cartItems.innerHTML = `<div class="empty">Chưa có món nào trong giỏ hàng.</div>`;
@@ -974,14 +1059,13 @@
               </div>
               <div class="cart-item-total">${formatCurrency(lineTotal)}</div>
             </div>
-
             <div class="cart-item-actions">
               <div class="qty-controls">
-                <button class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', -1)">−</button>
+                <button type="button" class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', -1)">−</button>
                 <div class="qty-num">${item.quantity}</div>
-                <button class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', 1)">+</button>
+                <button type="button" class="qty-btn" onclick="changeQty('${escapeJs(item.id)}', 1)">+</button>
               </div>
-              <button class="remove-link" onclick="removeItem('${escapeJs(item.id)}')">Xóa</button>
+              <button type="button" class="remove-link" onclick="removeItem('${escapeJs(item.id)}')">Xóa</button>
             </div>
           </div>
         `;
@@ -989,11 +1073,12 @@
     }
 
     function clearCart(){
+      const hasItems = getCartArray().length > 0;
       cart = {};
       saveCart();
       renderMenu();
       renderCart();
-      showToast("Đã xóa toàn bộ giỏ hàng");
+      if (hasItems) showToast("Đã xóa toàn bộ giỏ hàng");
     }
 
     function toggleCart(show){
@@ -1001,8 +1086,58 @@
       document.getElementById("cartDrawer").classList.toggle("show", show);
     }
 
+    async function placeOrder(buttonEl){
+      const items = getCartArray();
+
+      if (!items.length){
+        showToast("Giỏ hàng đang trống");
+        return;
+      }
+
+      if (buttonEl){
+        buttonEl.disabled = true;
+        buttonEl.textContent = "Đang lưu...";
+      }
+
+      try{
+        const res = await fetch(API, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify({
+            action: "createOrder",
+            order: { items: items }
+          })
+        });
+
+        const data = await res.json();
+
+        if (!data.success){
+          throw new Error(data.message || "Không lưu được đơn hàng");
+        }
+
+        cart = {};
+        saveCart();
+        renderMenu();
+        renderCart();
+        toggleCart(false);
+        showToast("Đặt đơn thành công");
+        await loadReport();
+        await loadHistory();
+      } catch(err){
+        console.error(err);
+        showToast("Lỗi: " + err.message);
+      } finally {
+        if (buttonEl){
+          buttonEl.disabled = false;
+          buttonEl.textContent = "Đặt đơn";
+        }
+      }
+    }
+
     async function fetchMenu(){
-      document.getElementById("menuContainer").innerHTML = `<div class="loading">Đang tải danh sách món...</div>`;
+      document.getElementById("menuContainer").innerHTML = `<div class="empty">Đang tải danh sách món...</div>`;
       const res = await fetch(API + "?action=menu");
       const data = await res.json();
 
@@ -1015,32 +1150,156 @@
       renderMenu();
     }
 
-    async function fetchSummary(){
+    async function loadReport(){
       try{
-        const res = await fetch(API + "?action=summary");
-        const data = await res.json();
-        if (!data.success) return;
+        ensureDefaultDateFilters();
 
-        document.getElementById("todayRevenue").textContent = formatCurrency(data.data.totalRevenue || 0);
-        document.getElementById("todayOrders").textContent = Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
-        document.getElementById("todayRevenueTop").textContent = "Doanh thu hôm nay: " + formatCurrency(data.data.totalRevenue || 0);
-        document.getElementById("todayOrdersTop").textContent = "Số đơn hôm nay: " + Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
-      }catch(err){
-        console.warn(err);
+        const fromDate = document.getElementById("reportFromDate").value;
+        const toDate = document.getElementById("reportToDate").value;
+
+        const res = await fetch(API + "?action=report&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
+        const data = await res.json();
+
+        if (!data.success){
+          throw new Error(data.message || "Không tải được số liệu");
+        }
+
+        document.getElementById("reportRevenue").textContent = formatCurrency(data.data.totalRevenue || 0);
+        document.getElementById("reportOrders").textContent = Number(data.data.totalOrders || 0).toLocaleString("vi-VN");
+        document.getElementById("reportQty").textContent = Number(data.data.totalQty || 0).toLocaleString("vi-VN");
+
+        const orders = data.data.orders || [];
+        document.getElementById("reportTableBody").innerHTML = orders.length
+          ? orders.map(order => `
+              <tr>
+                <td>${escapeHtml(order.time)}</td>
+                <td>${escapeHtml(order.orderCode)}</td>
+                <td>${Number(order.totalQty || 0).toLocaleString("vi-VN")}</td>
+                <td>${formatCurrency(order.total || 0)}</td>
+              </tr>
+            `).join("")
+          : `<tr><td colspan="4" class="empty">Không có dữ liệu trong khoảng ngày đã chọn</td></tr>`;
+      } catch(err){
+        console.error(err);
+        showToast("Lỗi số liệu: " + err.message);
       }
     }
 
-    async function placeOrder(){
-      const items = getCartArray();
-      if (!items.length){
-        showToast("Giỏ hàng đang trống");
-        return;
+    async function loadHistory(){
+      try{
+        ensureDefaultDateFilters();
+
+        const fromDate = document.getElementById("historyFromDate").value;
+        const toDate = document.getElementById("historyToDate").value;
+
+        const res = await fetch(API + "?action=orders&fromDate=" + encodeURIComponent(fromDate) + "&toDate=" + encodeURIComponent(toDate));
+        const data = await res.json();
+
+        if (!data.success){
+          throw new Error(data.message || "Không tải được lịch sử");
+        }
+
+        historyOrders = data.data || [];
+
+        document.getElementById("historyTableBody").innerHTML = historyOrders.length
+          ? historyOrders.map(order => `
+              <tr>
+                <td>${escapeHtml(order.time)}</td>
+                <td>${escapeHtml(order.orderCode)}</td>
+                <td>${renderItemsPreview(order.items)}</td>
+                <td>${formatCurrency(order.total || 0)}</td>
+                <td><button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button></td>
+              </tr>
+            `).join("")
+          : `<tr><td colspan="5" class="empty">Không có lịch sử đơn trong khoảng ngày đã chọn</td></tr>`;
+      } catch(err){
+        console.error(err);
+        showToast("Lỗi lịch sử: " + err.message);
+      }
+    }
+
+    function renderItemsPreview(items){
+      if (!items || !items.length) return '<span style="color:#64748b;">Không có dữ liệu chi tiết</span>';
+      return items.map(item =>
+        `${escapeHtml(item.name)} x ${Number(item.quantity || 0)}`
+      ).join("<br>");
+    }
+
+    function openEditModal(orderCode){
+      const order = historyOrders.find(x => x.orderCode === orderCode);
+      if (!order) return;
+
+      editingOrder = JSON.parse(JSON.stringify(order));
+
+      document.getElementById("editOrderInfo").innerHTML =
+        `Mã đơn: <strong>${escapeHtml(order.orderCode)}</strong> • Thời gian: <strong>${escapeHtml(order.time)}</strong>`;
+
+      renderEditItems();
+      document.getElementById("editModalOverlay").classList.add("show");
+    }
+
+    function closeEditModal(){
+      editingOrder = null;
+      document.getElementById("editModalOverlay").classList.remove("show");
+    }
+
+    function renderEditItems(){
+      if (!editingOrder) return;
+
+      const wrap = document.getElementById("editItemsContainer");
+      const items = editingOrder.items || [];
+
+      wrap.innerHTML = items.length ? items.map((item, idx) => `
+        <div class="cart-item">
+          <div class="cart-item-top">
+            <div>
+              <div class="cart-item-name">${escapeHtml(item.name)}</div>
+              <div class="cart-item-line">Đơn giá: ${formatCurrency(item.price)}</div>
+            </div>
+            <div class="cart-item-total">${formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}</div>
+          </div>
+
+          <div class="cart-item-actions">
+            <div class="qty-controls">
+              <button type="button" class="qty-btn" onclick="changeEditQty(${idx}, -1)">−</button>
+              <div class="qty-num">${item.quantity}</div>
+              <button type="button" class="qty-btn" onclick="changeEditQty(${idx}, 1)">+</button>
+            </div>
+            <button type="button" class="btn btn-danger" onclick="removeEditItem(${idx})">Xóa món</button>
+          </div>
+        </div>
+      `).join("") : `<div class="empty">Đơn hàng này không còn món nào.</div>`;
+
+      const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+      document.getElementById("editOrderTotal").textContent = "Tổng mới: " + formatCurrency(total);
+    }
+
+    function changeEditQty(index, delta){
+      if (!editingOrder || !editingOrder.items[index]) return;
+
+      const next = Number(editingOrder.items[index].quantity || 0) + delta;
+
+      if (next <= 0){
+        editingOrder.items.splice(index, 1);
+      } else {
+        editingOrder.items[index].quantity = next;
       }
 
-      const btn = event?.target;
-      if (btn){
-        btn.disabled = true;
-        btn.textContent = "Đang lưu...";
+      renderEditItems();
+    }
+
+    function removeEditItem(index){
+      if (!editingOrder) return;
+      editingOrder.items.splice(index, 1);
+      renderEditItems();
+    }
+
+    async function saveEditedOrder(){
+      if (!editingOrder) return;
+
+      if (!editingOrder.items || !editingOrder.items.length){
+        showToast("Đơn sửa phải còn ít nhất 1 món");
+        return;
       }
 
       try{
@@ -1050,34 +1309,49 @@
             "Content-Type": "text/plain;charset=utf-8"
           },
           body: JSON.stringify({
-            action: "createOrder",
+            action: "updateOrder",
+            orderCode: editingOrder.orderCode,
             order: {
-              items: items
+              items: editingOrder.items
             }
           })
         });
 
         const data = await res.json();
+
         if (!data.success){
-          throw new Error(data.message || "Không lưu được đơn hàng");
+          throw new Error(data.message || "Không lưu được thay đổi");
         }
 
-        cart = {};
-        saveCart();
-        renderMenu();
-        renderCart();
-        toggleCart(false);
-        await fetchSummary();
-        showToast("Đặt đơn thành công");
+        closeEditModal();
+        showToast("Đã cập nhật đơn hàng");
+        await loadReport();
+        await loadHistory();
       } catch(err){
         console.error(err);
-        showToast("Lỗi: " + err.message);
-      } finally {
-        if (btn){
-          btn.disabled = false;
-          btn.textContent = "Đặt đơn";
-        }
+        showToast("Lỗi cập nhật: " + err.message);
       }
+    }
+
+    function ensureDefaultDateFilters(){
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const todayText = formatDateInput(today);
+      const firstText = formatDateInput(firstDay);
+
+      if (!document.getElementById("reportFromDate").value) document.getElementById("reportFromDate").value = firstText;
+      if (!document.getElementById("reportToDate").value) document.getElementById("reportToDate").value = todayText;
+
+      if (!document.getElementById("historyFromDate").value) document.getElementById("historyFromDate").value = firstText;
+      if (!document.getElementById("historyToDate").value) document.getElementById("historyToDate").value = todayText;
+    }
+
+    function formatDateInput(date){
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
 
     function escapeHtml(text){
@@ -1107,8 +1381,8 @@
     async function init(){
       loadCart();
       renderCart();
+      ensureDefaultDateFilters();
       await fetchMenu();
-      await fetchSummary();
     }
 
     init().catch(err => {
