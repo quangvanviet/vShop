@@ -100,6 +100,29 @@
       color:#fff;
     }
 
+    .view-switch{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .view-btn{
+      border:none;
+      background:#eef2ff;
+      color:#1e3a8a;
+      border-radius:999px;
+      padding:8px 14px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .view-btn.active{
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#fff;
+    }
+
     .cart-launch-row{
       margin-top: 6px;
       display: flex;
@@ -638,7 +661,7 @@
     }
 
     .modal{
-      width:min(720px, 100%);
+      width:min(860px, 100%);
       background:#fff;
       border-radius:24px;
       box-shadow:var(--shadow);
@@ -659,6 +682,24 @@
       margin:0;
     }
 
+    .edit-add-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .edit-add-item{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
     @media (max-width: 980px){
       .hero{ grid-template-columns:1fr; }
       .toolbar{ grid-template-columns:1fr; }
@@ -671,6 +712,10 @@
       }
       .item-thumb{ height:135px; }
       .summary-card{ grid-template-columns:1fr; }
+      .view-switch{
+        width:100%;
+        justify-content:center;
+      }
     }
   </style>
 </head>
@@ -683,13 +728,20 @@
           <h1>vShop - Quản lý bán hàng</h1>
         </div>
       </div>
+
+      <div class="view-switch">
+        <button type="button" class="view-btn active" id="btnOwnerView" onclick="setViewMode('owner')">Chủ quán</button>
+        <button type="button" class="view-btn" id="btnCustomerView" onclick="setViewMode('customer')">Khách hàng</button>
+      </div>
     </div>
+
     <div class="tabs">
       <button type="button" class="tab-btn active" data-tab="menu" onclick="switchTab('menu')">Menu</button>
       <button type="button" class="tab-btn" data-tab="report" onclick="switchTab('report')">Số liệu</button>
       <button type="button" class="tab-btn" data-tab="history" onclick="switchTab('history')">Lịch sử đặt đơn</button>
     </div>
   </header>
+
   <div class="cart-launch-row">
     <button type="button" class="cart-handle-top" onclick="toggleCart(true)">
       <span>🛒 Giỏ hàng</span>
@@ -871,6 +923,12 @@
       </div>
       <div id="editOrderInfo" style="margin-bottom:16px;color:var(--muted);"></div>
       <div id="editItemsContainer"></div>
+
+      <div style="margin-top:18px;">
+        <h4 style="margin:0 0 10px;">Thêm món vào đơn</h4>
+        <div id="editAddItemsContainer" class="edit-add-grid"></div>
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
         <strong id="editOrderTotal">0 VNĐ</strong>
         <div style="display:flex;gap:10px;">
@@ -886,12 +944,14 @@
   <script>
     const API = "https://script.google.com/macros/s/AKfycbz3XWqqLYNVt5X03qAgro9PZDuebR7DDVVN4CZ8z31dJ6mI9_AkSng1cbXmYRe12_fY/exec";
     const HISTORY_LIMIT = 50;
+    const VIEW_MODE_KEY = "vshop-view-mode";
 
     let menuItems = [];
     let cart = {};
     let activeGroup = "Tất cả";
     let historyOrders = [];
     let editingOrder = null;
+    let currentViewMode = "owner";
 
     const $ = (id) => document.getElementById(id);
     const formatCurrency = (n) => Number(n || 0).toLocaleString("vi-VN") + " VNĐ";
@@ -1002,7 +1062,33 @@
       return data.data;
     }
 
+    function setViewMode(mode){
+      currentViewMode = mode === "customer" ? "customer" : "owner";
+      localStorage.setItem(VIEW_MODE_KEY, currentViewMode);
+
+      $("btnOwnerView").classList.toggle("active", currentViewMode === "owner");
+      $("btnCustomerView").classList.toggle("active", currentViewMode === "customer");
+
+      const reportTab = document.querySelector('.tab-btn[data-tab="report"]');
+      const historyTab = document.querySelector('.tab-btn[data-tab="history"]');
+
+      if (currentViewMode === "customer") {
+        if (reportTab) reportTab.classList.add("hidden");
+        if (historyTab) historyTab.classList.add("hidden");
+        if (!document.querySelector('.tab-btn[data-tab="menu"]').classList.contains("active")) {
+          switchTab("menu");
+        }
+      } else {
+        if (reportTab) reportTab.classList.remove("hidden");
+        if (historyTab) historyTab.classList.remove("hidden");
+      }
+    }
+
     function switchTab(tabName){
+      if (currentViewMode === "customer" && (tabName === "report" || tabName === "history")) {
+        tabName = "menu";
+      }
+
       document.querySelectorAll(".section").forEach(el => el.classList.remove("active"));
       document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
 
@@ -1347,6 +1433,8 @@
     }
 
     function openEditModal(orderCode){
+      if (currentViewMode !== "owner") return;
+
       const order = historyOrders.find(x => x.orderCode === orderCode);
       if (!order) {
         showToast("Không tìm thấy đơn hàng để sửa");
@@ -1359,6 +1447,7 @@
         `Mã đơn: <strong>${escapeHtml(order.orderCode)}</strong> • Thời gian: <strong>${escapeHtml(order.time)}</strong>`;
 
       renderEditItems();
+      renderEditAddItems();
       $("editModalOverlay").classList.add("show");
     }
 
@@ -1397,6 +1486,45 @@
       $("editOrderTotal").textContent = "Tổng mới: " + formatCurrency(total);
     }
 
+    function renderEditAddItems(){
+      const wrap = $("editAddItemsContainer");
+      if (!wrap) return;
+
+      wrap.innerHTML = menuItems.map(item => `
+        <div class="edit-add-item">
+          <div style="font-weight:800; margin-bottom:6px;">${escapeHtml(item.name || "")}</div>
+          <div style="color:#dc2626; font-weight:800; margin-bottom:8px;">${formatCurrency(item.price)}</div>
+          <button type="button" class="btn btn-light" style="width:100%;" onclick="addMenuItemToEditingOrder('${escapeJs(item.id)}')">Thêm vào đơn</button>
+        </div>
+      `).join("");
+    }
+
+    function addMenuItemToEditingOrder(itemId){
+      if (!editingOrder) return;
+
+      const menuItem = menuItems.find(x => x.id === itemId);
+      if (!menuItem) return;
+
+      const found = editingOrder.items.find(x => String(x.id) === String(menuItem.id));
+
+      if (found) {
+        found.quantity = Number(found.quantity || 0) + 1;
+      } else {
+        editingOrder.items.push({
+          id: menuItem.id,
+          name: menuItem.name,
+          price: Number(menuItem.price || 0),
+          quantity: 1,
+          lineTotal: Number(menuItem.price || 0),
+          image: menuItem.image || "",
+          group: menuItem.group || "Khác"
+        });
+      }
+
+      renderEditItems();
+      showToast("Đã thêm món vào đơn");
+    }
+
     function changeEditQty(index, delta){
       if (!editingOrder || !editingOrder.items[index]) return;
 
@@ -1433,7 +1561,8 @@
 
         applyUpdatedOrderToUi({
           ...editingOrder,
-          orderCode: result.orderCode
+          orderCode: result.orderCode,
+          items: result.items || editingOrder.items
         });
 
         closeEditModal();
@@ -1445,6 +1574,29 @@
       } catch(err){
         console.error(err);
         showToast("Lỗi cập nhật: " + err.message);
+      }
+    }
+
+    async function deleteOrder(orderCode){
+      if (currentViewMode !== "owner") return;
+
+      const ok = confirm("Bạn có chắc muốn xóa đơn này khỏi lịch sử không?");
+      if (!ok) return;
+
+      try{
+        const result = await apiRequestPost("deleteOrder", { orderCode });
+
+        historyOrders = historyOrders.filter(x => x.orderCode !== orderCode);
+        rerenderHistoryTable();
+
+        if (isCurrentTab("report")) {
+          await loadReport();
+        }
+
+        showToast("Đã xóa đơn hàng");
+      } catch(err){
+        console.error(err);
+        showToast("Lỗi xóa đơn: " + err.message);
       }
     }
 
@@ -1494,7 +1646,12 @@
               <td>${escapeHtml(order.orderCode)}</td>
               <td>${renderItemsPreview(order.items)}</td>
               <td>${formatCurrency(order.total || 0)}</td>
-              <td><button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button></td>
+              <td>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button>
+                  <button type="button" class="btn btn-danger" onclick="deleteOrder('${escapeJs(order.orderCode)}')">Xóa đơn</button>
+                </div>
+              </td>
             </tr>
           `).join("")
         : `<tr><td colspan="5" class="empty">Không có lịch sử đơn trong khoảng ngày đã chọn</td></tr>`;
@@ -1510,7 +1667,7 @@
         total: createdOrder.total != null ? createdOrder.total : total,
         totalQty: createdOrder.totalQty != null ? createdOrder.totalQty : totalQty,
         orderCode: createdOrder.orderCode || "",
-        items: JSON.parse(JSON.stringify(items))
+        items: JSON.parse(JSON.stringify(createdOrder.items || items))
       };
 
       if (isWithinCurrentHistoryFilter(newOrder.time)) {
@@ -1540,6 +1697,9 @@
       loadCart();
       renderCart();
       ensureDefaultDateFilters();
+
+      const savedMode = localStorage.getItem(VIEW_MODE_KEY) || "owner";
+      setViewMode(savedMode);
 
       try{
         await fetchMenu();
