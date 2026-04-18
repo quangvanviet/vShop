@@ -40,7 +40,7 @@
     .topbar-row{
       display:flex;
       align-items:center;
-      justify-content:space-between;
+      justify-content:center;
       gap:16px;
       flex-wrap:wrap;
     }
@@ -725,7 +725,8 @@
       <div class="brand">
         <div class="brand-badge">🍹</div>
         <div class="brand-text">
-          <h1>vShop - Quản lý bán hàng</h1>
+          <h1>vShop</h1>
+          <span>Quản lý bán hàng</span>
         </div>
       </div>
 
@@ -939,13 +940,30 @@
     </div>
   </div>
 
+  <div id="ownerLoginOverlay" class="modal-overlay">
+    <div class="modal" style="width:min(420px, 100%);">
+      <div class="modal-header">
+        <h3>Đăng nhập Chủ quán</h3>
+        <button type="button" class="icon-btn" onclick="closeOwnerLogin(false)">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <input id="ownerUsername" class="input" type="text" placeholder="Tài khoản" value="admin" />
+        <input id="ownerPassword" class="input" type="password" placeholder="Mật khẩu" />
+        <button type="button" class="btn btn-primary" onclick="submitOwnerLogin()">Đăng nhập</button>
+      </div>
+    </div>
+  </div>
+  
   <div id="toast" class="toast"></div>
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbz3XWqqLYNVt5X03qAgro9PZDuebR7DDVVN4CZ8z31dJ6mI9_AkSng1cbXmYRe12_fY/exec";
     const HISTORY_LIMIT = 50;
     const VIEW_MODE_KEY = "vshop-view-mode";
-
+    const OWNER_USERNAME = "admin";
+    const OWNER_PASSWORD = "25052005";
+    
     let menuItems = [];
     let cart = {};
     let activeGroup = "Tất cả";
@@ -1062,42 +1080,121 @@
       return data.data;
     }
 
-    function setViewMode(mode){
-      currentViewMode = mode === "customer" ? "customer" : "owner";
-      localStorage.setItem(VIEW_MODE_KEY, currentViewMode);
-
-      $("btnOwnerView").classList.toggle("active", currentViewMode === "owner");
-      $("btnCustomerView").classList.toggle("active", currentViewMode === "customer");
-
+    function isOwnerLoggedIn(){
+      return localStorage.getItem(OWNER_AUTH_KEY) === "1";
+    }
+    
+    function openOwnerLogin(){
+      $("ownerUsername").value = "admin";
+      $("ownerPassword").value = "";
+      $("ownerLoginOverlay").classList.add("show");
+      setTimeout(() => {
+        $("ownerPassword").focus();
+      }, 50);
+    }
+    
+    function closeOwnerLogin(resetToCustomer = true){
+      $("ownerLoginOverlay").classList.remove("show");
+    
+      if (resetToCustomer && !isOwnerLoggedIn()) {
+        currentViewMode = "customer";
+        localStorage.setItem(VIEW_MODE_KEY, "customer");
+        applyViewModeUi();
+      }
+    }
+    
+    function submitOwnerLogin(){
+      const username = String($("ownerUsername").value || "").trim();
+      const password = String($("ownerPassword").value || "");
+    
+      if (username === OWNER_USERNAME && password === OWNER_PASSWORD) {
+        localStorage.setItem(OWNER_AUTH_KEY, "1");
+        currentViewMode = "owner";
+        localStorage.setItem(VIEW_MODE_KEY, "owner");
+        $("ownerLoginOverlay").classList.remove("show");
+        applyViewModeUi();
+        showToast("Đăng nhập Chủ quán thành công");
+        loadReport();
+        loadHistory();
+      } else {
+        showToast("Sai tài khoản hoặc mật khẩu");
+      }
+    }
+    
+    function logoutOwner(){
+      localStorage.removeItem(OWNER_AUTH_KEY);
+      currentViewMode = "customer";
+      localStorage.setItem(VIEW_MODE_KEY, "customer");
+      applyViewModeUi();
+      showToast("Đã đăng xuất Chủ quán");
+    }
+    
+    function applyViewModeUi(){
+      const ownerLoggedIn = isOwnerLoggedIn();
+      const ownerMode = currentViewMode === "owner" && ownerLoggedIn;
+    
+      $("btnOwnerView").classList.toggle("active", ownerMode);
+      $("btnCustomerView").classList.toggle("active", !ownerMode);
+    
       const reportTab = document.querySelector('.tab-btn[data-tab="report"]');
       const historyTab = document.querySelector('.tab-btn[data-tab="history"]');
-
-      if (currentViewMode === "customer") {
-        if (reportTab) reportTab.classList.add("hidden");
-        if (historyTab) historyTab.classList.add("hidden");
-        if (!document.querySelector('.tab-btn[data-tab="menu"]').classList.contains("active")) {
-          switchTab("menu");
-        }
-      } else {
+    
+      if (ownerMode) {
         if (reportTab) reportTab.classList.remove("hidden");
         if (historyTab) historyTab.classList.remove("hidden");
+        $("btnOwnerView").textContent = "Chủ quán";
+        $("btnCustomerView").textContent = "Đăng xuất";
+        $("btnCustomerView").onclick = logoutOwner;
+      } else {
+        if (reportTab) reportTab.classList.add("hidden");
+        if (historyTab) historyTab.classList.add("hidden");
+        $("btnOwnerView").textContent = "Chủ quán";
+        $("btnCustomerView").textContent = "Khách hàng";
+        $("btnCustomerView").onclick = function(){ setViewMode("customer"); };
+    
+        if (isCurrentTab("report") || isCurrentTab("history")) {
+          switchTab("menu");
+        }
       }
+    }
+    
+    function setViewMode(mode){
+      if (mode === "owner") {
+        if (isOwnerLoggedIn()) {
+          currentViewMode = "owner";
+          localStorage.setItem(VIEW_MODE_KEY, "owner");
+          applyViewModeUi();
+          return;
+        }
+    
+        currentViewMode = "customer";
+        localStorage.setItem(VIEW_MODE_KEY, "customer");
+        applyViewModeUi();
+        openOwnerLogin();
+        return;
+      }
+    
+      currentViewMode = "customer";
+      localStorage.setItem(VIEW_MODE_KEY, "customer");
+      applyViewModeUi();
     }
 
     function switchTab(tabName){
-      if (currentViewMode === "customer" && (tabName === "report" || tabName === "history")) {
+      const ownerMode = currentViewMode === "owner" && isOwnerLoggedIn();
+    
+      if (!ownerMode && (tabName === "report" || tabName === "history")) {
         tabName = "menu";
       }
-
+    
       document.querySelectorAll(".section").forEach(el => el.classList.remove("active"));
       document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
-
+    
       const section = $("section-" + tabName);
       const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
-
+    
       if (section) section.classList.add("active");
       if (tabBtn) tabBtn.classList.add("active");
-
+    
       if (tabName === "report") loadReport();
       if (tabName === "history") loadHistory();
     }
@@ -1433,7 +1530,7 @@
     }
 
     function openEditModal(orderCode){
-      if (currentViewMode !== "owner") return;
+      if (!(currentViewMode === "owner" && isOwnerLoggedIn())) return;
 
       const order = historyOrders.find(x => x.orderCode === orderCode);
       if (!order) {
@@ -1578,7 +1675,7 @@
     }
 
     async function deleteOrder(orderCode){
-      if (currentViewMode !== "owner") return;
+      if (!(currentViewMode === "owner" && isOwnerLoggedIn())) return;
 
       const ok = confirm("Bạn có chắc muốn xóa đơn này khỏi lịch sử không?");
       if (!ok) return;
@@ -1697,10 +1794,11 @@
       loadCart();
       renderCart();
       ensureDefaultDateFilters();
-
-      const savedMode = localStorage.getItem(VIEW_MODE_KEY) || "owner";
-      setViewMode(savedMode);
-
+    
+      const savedMode = localStorage.getItem(VIEW_MODE_KEY) || "customer";
+      currentViewMode = savedMode === "owner" && isOwnerLoggedIn() ? "owner" : "customer";
+      applyViewModeUi();
+    
       try{
         await fetchMenu();
       } catch(err){
@@ -1708,7 +1806,7 @@
         $("menuContainer").innerHTML = `<div class="empty">Lỗi tải menu: ${escapeHtml(err.message)}</div>`;
         showToast("Lỗi menu: " + err.message);
       }
-
+    
       await Promise.allSettled([loadReport(), loadHistory()]);
     }
 
