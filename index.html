@@ -746,7 +746,7 @@
 
       <div class="view-switch">
         <button type="button" class="view-btn active" id="btnOwnerView" onclick="setViewMode('owner')">Chủ quán</button>
-        <button type="button" class="view-btn" id="btnCustomerView" onclick="setViewMode('customer')">Khách hàng</button>
+        <button type="button" class="view-btn" id="btnCustomerView" onclick="setViewMode('customer')">Khách</button>
       </div>
     </div>
 
@@ -781,8 +781,7 @@
 
       <div class="panel">
         <div class="order-meta-grid">
-          <input id="customerNameInput" class="input" type="text" placeholder="Tên khách hàng" />
-          <input id="tableNumberInput" class="input" type="text" placeholder="Số bàn" />
+          <input id="customerNameInput" style="background: #ffecec; padding: 10px 14px;" class="input" type="text" placeholder="Tên khách hoặc số bàn" />
         </div>
         <div class="group-tabs" id="groupTabs"></div>
       </div>
@@ -912,19 +911,18 @@
       <button type="button" class="icon-btn" onclick="toggleCart(false)">→</button>
     </div>
 
+    <div class="cart-top-actions">
+      <button type="button" style="padding: 8px 8px;" class="btn btn-light" onclick="clearCart()">Xóa giỏ</button>
+      <button type="button" style="padding: 8px 8px;" id="placeOrderBtn" class="btn btn-primary" onclick="placeOrder(this)">Đặt đơn</button>
+    </div>
+    
     <div class="cart-top-total">
       <div class="label">Tổng tiền hiện tại</div>
       <div class="value" id="cartTotalTop">0 VNĐ</div>
     </div>
 
     <div class="cart-meta-box">
-      <input id="cartCustomerNameInput" class="input" type="text" placeholder="Tên khách hàng" />
-      <input id="cartTableNumberInput" class="input" type="text" placeholder="Số bàn" />
-    </div>
-
-    <div class="cart-top-actions">
-      <button type="button" class="btn btn-light" onclick="clearCart()">Xóa giỏ</button>
-      <button type="button" id="placeOrderBtn" class="btn btn-primary" onclick="placeOrder(this)">Đặt đơn</button>
+      <input id="cartCustomerNameInput" style="background: #ffecec; padding: 10px 14px;" class="input" type="text" placeholder="Tên khách hoặc số bàn" />
     </div>
 
     <div class="cart-body" id="cartItems"></div>
@@ -943,16 +941,23 @@
 
   <div id="editModalOverlay" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header">
+      <div class="modal-header" style="margin-bottom: 8px;">
         <h3>Sửa đơn hàng</h3>
         <button type="button" class="icon-btn" onclick="closeEditModal()">✕</button>
       </div>
-
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <strong id="editOrderTotal">0 VNĐ</strong>
+        <div style="display:flex;gap:10px;">
+          <button type="button" style="padding: 8px 8px;" class="btn btn-light" onclick="closeEditModal()">Hủy</button>
+          <button type="button" style="padding: 8px 8px;" class="btn btn-primary" onclick="saveEditedOrder()">Lưu thay đổi</button>
+        </div>
+      </div>
+      
       <div id="editOrderInfo" style="margin-bottom:16px;color:var(--muted);"></div>
 
       <div class="order-meta-grid">
-        <input id="editCustomerNameInput" class="input" type="text" placeholder="Tên khách hàng" />
-        <input id="editTableNumberInput" class="input" type="text" placeholder="Số bàn" />
+        <input id="editCustomerNameInput" style="background: #ffecec; padding: 10px 14px;" class="input" type="text" placeholder="Tên khách hoặc số bàn" />
       </div>
 
       <div id="editItemsContainer"></div>
@@ -961,14 +966,7 @@
         <h4 style="margin:0 0 10px;">Thêm món vào đơn</h4>
         <div id="editAddItemsContainer" class="edit-add-grid"></div>
       </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
-        <strong id="editOrderTotal">0 VNĐ</strong>
-        <div style="display:flex;gap:10px;">
-          <button type="button" class="btn btn-light" onclick="closeEditModal()">Hủy</button>
-          <button type="button" class="btn btn-primary" onclick="saveEditedOrder()">Lưu thay đổi</button>
-        </div>
-      </div>
+      
     </div>
   </div>
 
@@ -1045,31 +1043,16 @@
       return String($("customerNameInput")?.value || $("cartCustomerNameInput")?.value || "").trim();
     }
 
-    function getTableNumber(){
-      return String($("tableNumberInput")?.value || $("cartTableNumberInput")?.value || "").trim();
-    }
-
     function syncOrderMetaInputs(source){
       const customer = source === "cart"
         ? String($("cartCustomerNameInput")?.value || "").trim()
         : String($("customerNameInput")?.value || "").trim();
-
-      const table = source === "cart"
-        ? String($("cartTableNumberInput")?.value || "").trim()
-        : String($("tableNumberInput")?.value || "").trim();
 
       if ($("customerNameInput") && document.activeElement !== $("customerNameInput")) {
         $("customerNameInput").value = customer;
       }
       if ($("cartCustomerNameInput") && document.activeElement !== $("cartCustomerNameInput")) {
         $("cartCustomerNameInput").value = customer;
-      }
-
-      if ($("tableNumberInput") && document.activeElement !== $("tableNumberInput")) {
-        $("tableNumberInput").value = table;
-      }
-      if ($("cartTableNumberInput") && document.activeElement !== $("cartTableNumberInput")) {
-        $("cartTableNumberInput").value = table;
       }
     }
 
@@ -1214,7 +1197,7 @@
         if (reportTab) reportTab.classList.add("hidden");
         if (historyTab) historyTab.classList.add("hidden");
         $("btnOwnerView").textContent = "Chủ quán";
-        $("btnCustomerView").textContent = "Khách hàng";
+        $("btnCustomerView").textContent = "Khách";
         $("btnCustomerView").onclick = function(){ setViewMode("customer"); };
     
         if (isCurrentTab("report") || isCurrentTab("history")) {
@@ -1455,15 +1438,13 @@
 
     function renderCustomerInfo(order){
       const parts = [];
-      if (order.customerName) parts.push(`Khách: ${escapeHtml(order.customerName)}`);
-      if (order.tableNumber) parts.push(`Bàn: ${escapeHtml(order.tableNumber)}`);
+      if (order.customerName) parts.push(`Khách/Bàn: ${escapeHtml(order.customerName)}`);
       return parts.length ? parts.join("<br>") : '<span style="color:#64748b;">-</span>';
     }
 
     async function placeOrder(buttonEl){
       const items = getCartArray();
       const customerName = getCustomerName();
-      const tableNumber = getTableNumber();
 
       if (!items.length){
         showToast("Giỏ hàng đang trống");
@@ -1480,7 +1461,6 @@
           order: {
             items,
             customerName,
-            tableNumber
           }
         });
 
@@ -1628,7 +1608,6 @@
         `Mã đơn: <strong>${escapeHtml(order.orderCode)}</strong> • Thời gian: <strong>${escapeHtml(order.time)}</strong>`;
 
       $("editCustomerNameInput").value = order.customerName || "";
-      $("editTableNumberInput").value = order.tableNumber || "";
 
       renderEditItems();
       renderEditAddItems();
@@ -1676,9 +1655,9 @@
 
       wrap.innerHTML = menuItems.map(item => `
         <div class="edit-add-item">
-          <div style="font-weight:800; margin-bottom:6px;">${escapeHtml(item.name || "")}</div>
-          <div style="color:#dc2626; font-weight:800; margin-bottom:8px;">${formatCurrency(item.price)}</div>
-          <button type="button" class="btn btn-light" style="width:100%;" onclick="addMenuItemToEditingOrder('${escapeJs(item.id)}')">Thêm vào đơn</button>
+          <div style="font-weight:800; margin-bottom:6px; display: flex; justify-content: center;">${escapeHtml(item.name || "")}</div>
+          <div style="color:#dc2626; font-weight:800; margin-bottom:8px; display: flex; justify-content: center;">${formatCurrency(item.price)}</div>
+          <button type="button" class="btn btn-light" style="padding: 6px 3px; width:100%;" onclick="addMenuItemToEditingOrder('${escapeJs(item.id)}')">Thêm vào đơn</button>
         </div>
       `).join("");
     }
@@ -1738,7 +1717,6 @@
       }
 
       const customerName = String($("editCustomerNameInput").value || "").trim();
-      const tableNumber = String($("editTableNumberInput").value || "").trim();
 
       try{
         const result = await apiRequestPost("updateOrder", {
@@ -1746,7 +1724,6 @@
           order: {
             items: editingOrder.items,
             customerName,
-            tableNumber
           }
         });
 
@@ -1755,7 +1732,6 @@
           orderCode: result.orderCode,
           items: result.items || editingOrder.items,
           customerName: result.customerName || customerName,
-          tableNumber: result.tableNumber || tableNumber
         });
 
         closeEditModal();
@@ -1803,7 +1779,6 @@
         total: updatedOrder.items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0),
         totalQty: updatedOrder.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
         customerName: updatedOrder.customerName || "",
-        tableNumber: updatedOrder.tableNumber || ""
       };
 
       rerenderHistoryTable();
@@ -1865,7 +1840,6 @@
         orderCode: createdOrder.orderCode || "",
         items: JSON.parse(JSON.stringify(createdOrder.items || items)),
         customerName: createdOrder.customerName || "",
-        tableNumber: createdOrder.tableNumber || ""
       };
 
       if (isWithinCurrentHistoryFilter(newOrder.time)) {
@@ -1903,15 +1877,11 @@
       if ($("customerNameInput")) {
         $("customerNameInput").addEventListener("input", () => syncOrderMetaInputs("menu"));
       }
-      if ($("tableNumberInput")) {
-        $("tableNumberInput").addEventListener("input", () => syncOrderMetaInputs("menu"));
-      }
+
       if ($("cartCustomerNameInput")) {
         $("cartCustomerNameInput").addEventListener("input", () => syncOrderMetaInputs("cart"));
       }
-      if ($("cartTableNumberInput")) {
-        $("cartTableNumberInput").addEventListener("input", () => syncOrderMetaInputs("cart"));
-      }
+
     
       try{
         await fetchMenu();
