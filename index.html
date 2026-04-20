@@ -1819,8 +1819,8 @@
               <td>${formatCurrency(order.total || 0)}</td>
               <td>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                  <button type="button" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button>
-                  <button type="button" class="btn btn-danger" onclick="deleteOrder('${escapeJs(order.orderCode)}')">Xóa đơn</button>
+                  <button type="button" style="padding: 6px 14px;" class="btn btn-light" onclick="openEditModal('${escapeJs(order.orderCode)}')">Sửa</button>
+                  <button type="button" style="padding: 6px 14px;" class="btn btn-danger" onclick="deleteOrder('${escapeJs(order.orderCode)}')">Xóa</button>
                 </div>
               </td>
             </tr>
